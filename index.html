@@ -1,1 +1,166 @@
-<h1>SP UAT</h1>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ลงทะเบียนเพื่อรับการติดต่อกลับ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+    <!-- Hero Section -->
+    <header class="bg-blue-600 text-white py-16 px-4 text-center">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">ยินดีให้คำปรึกษาและบริการ</h1>
+            <p class="text-xl opacity-90">กรอกข้อมูลด้านล่างเพื่อให้ทีมงานของเราติดต่อกลับโดยเร็วที่สุด</p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 -mt-10 pb-20">
+        <div class="grid md:grid-cols-2 gap-8 items-start">
+            
+            <!-- Left Side: Content -->
+            <div class="p-6 md:p-10">
+                <h2 class="text-2xl font-semibold mb-6 text-blue-800">ทำไมต้องให้เราดูแลคุณ?</h2>
+                <ul class="space-y-4">
+                    <li class="flex items-start">
+                        <span class="bg-blue-100 text-blue-600 p-2 rounded-full mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-lg">ทีมงานมืออาชีพ</h3>
+                            <p class="text-slate-600">เรามีผู้เชี่ยวชาญพร้อมให้คำแนะนำในทุกขั้นตอน</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-blue-100 text-blue-600 p-2 rounded-full mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                        <div>
+                            <h3 class="font-bold text-lg">รวดเร็วทันใจ</h3>
+                            <p class="text-slate-600">ติดต่อกลับภายใน 24 ชั่วโมงทำการ</p>
+                        </div>
+                    </li>
+                </ul>
+                <div class="mt-8 p-6 bg-white rounded-2xl shadow-sm border border-slate-100 text-center">
+                    <p class="text-slate-500 italic">"บริการประทับใจ ให้คำแนะนำดีมากครับ"</p>
+                    <p class="font-bold mt-2">- คุณลูกค้าท่านหนึ่ง</p>
+                </div>
+            </div>
+
+            <!-- Right Side: Registration Form -->
+            <div id="formContainer" class="glass-morphism p-8 rounded-3xl shadow-xl border-t-4 border-blue-500">
+                <h2 class="text-2xl font-bold mb-6 text-center">ลงทะเบียนติดต่อกลับ</h2>
+                <form id="registrationForm" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">ชื่อ-นามสกุล</label>
+                        <input type="text" name="name" required
+                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                            placeholder="ระบุชื่อของคุณ">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">เบอร์โทรศัพท์</label>
+                        <input type="tel" name="phone" required
+                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                            placeholder="08X-XXX-XXXX">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">อีเมล</label>
+                        <input type="email" name="email"
+                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                            placeholder="example@email.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">เรื่องที่สนใจ / ข้อความ</label>
+                        <textarea name="message" rows="3"
+                            class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                            placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
+                    </div>
+                    <button type="submit" id="submitBtn"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform transition active:scale-95">
+                        ส่งข้อมูล
+                    </button>
+                </form>
+
+                <!-- Status Message -->
+                <div id="statusMessage" class="hidden mt-6 p-4 rounded-xl text-center"></div>
+            </div>
+
+            <!-- Success State (Hidden initially) -->
+            <div id="successState" class="hidden glass-morphism p-12 rounded-3xl shadow-xl text-center">
+                <div class="bg-green-100 text-green-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-bold mb-4 text-slate-800">ขอบคุณที่ลงทะเบียน!</h2>
+                <p class="text-slate-600 text-lg mb-8">เราได้รับข้อมูลของคุณเรียบร้อยแล้ว ทีมงานจะติดต่อกลับหาคุณโดยเร็วที่สุด</p>
+                <button onclick="location.reload()" class="text-blue-600 font-semibold hover:underline">ส่งข้อมูลอีกครั้ง</button>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="text-center py-10 text-slate-400 text-sm">
+        &copy; 2024 Your Brand Name. All rights reserved.
+    </footer>
+
+    <script>
+        // *** สำคัญ: นำ URL ที่ได้จาก Google Apps Script มาใส่ตรงนี้ ***
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1NSbI-dSw16JeY9RmW8CRTtPmXhgrAa9q41Fl3n1XIhLF04rI7YsYXEjrveCfbXHfhw/exec';
+
+        const form = document.getElementById('registrationForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMsg = document.getElementById('statusMessage');
+        const formContainer = document.getElementById('formContainer');
+        const successState = document.getElementById('successState');
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            
+            // ป้องกันการกดซ้ำ
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'กำลังส่งข้อมูล...';
+            statusMsg.classList.remove('hidden', 'bg-red-100', 'text-red-700');
+            statusMsg.classList.add('bg-blue-50', 'text-blue-600');
+            statusMsg.innerText = 'โปรดรอสักครู่...';
+
+            const formData = new FormData(form);
+            
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if(response.ok) {
+                    formContainer.classList.add('hidden');
+                    successState.classList.remove('hidden');
+                } else {
+                    throw new Error('Network response was not ok.');
+                }
+            })
+            .catch(error => {
+                console.error('Error!', error.message);
+                statusMsg.classList.remove('bg-blue-50', 'text-blue-600');
+                statusMsg.classList.add('bg-red-100', 'text-red-700');
+                statusMsg.innerText = 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'ส่งข้อมูล';
+            });
+        });
+    </script>
+</body>
+</html>
