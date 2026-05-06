@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบลงทะเบียนติดต่อกลับ - Firebase Real-time</title>
+    <title>ระบบลงทะเบียนติดต่อกลับ - Real-time Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -27,7 +27,7 @@
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center">
             <div class="text-center md:text-left mb-6 md:mb-0">
                 <h1 class="text-3xl md:text-4xl font-bold mb-2 text-white">Registration Portal</h1>
-                <p class="text-blue-100">ระบบรับข้อมูลความเร็วสูง เชื่อมต่อ Firebase Cloud Direct</p>
+                <p class="text-blue-100">ระบบรับข้อมูล Real-time (No-Billing Version)</p>
             </div>
             <div id="connectionStatus" class="flex items-center bg-blue-700 px-4 py-2 rounded-full text-sm">
                 <span class="w-2 h-2 bg-yellow-400 rounded-full mr-2 loading-pulse"></span>
@@ -91,7 +91,7 @@
                     </div>
                     
                     <div id="listContainer" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                        <div class="p-12 text-center text-slate-400">
+                        <div id="initialLoader" class="p-12 text-center text-slate-400">
                             <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                             <p>กำลังโหลดข้อมูล...</p>
                         </div>
@@ -111,9 +111,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getDatabase, ref, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // --- ตั้งค่า Firebase จากข้อมูลของคุณ ---
+        // --- ตั้งค่า Firebase ---
         const firebaseConfig = {
             apiKey: "AIzaSyCo3cgxCC7XBCY1VRtwZBujlipacjFH6cA",
             authDomain: "register-6ad84.firebaseapp.com",
@@ -125,7 +125,6 @@
             measurementId: "G-SW3DF3R2BG"
         };
 
-        // Initialize Global Variables
         const statusEl = document.getElementById('connectionStatus');
         const statusText = document.getElementById('statusText');
         const listContainer = document.getElementById('listContainer');
@@ -146,54 +145,49 @@
 
         const init = async () => {
             try {
-                // เริ่มต้น Firebase
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
-                db = getFirestore(app);
+                db = getDatabase(app);
 
                 updateStatus("กำลังตรวจสอบสิทธิ์...");
-
-                // ล็อกอินแบบไม่ระบุตัวตน (ต้องเปิด Anonymous Auth ใน Firebase Console)
                 await signInAnonymously(auth);
 
                 onAuthStateChanged(auth, (currentUser) => {
                     user = currentUser;
                     if (user) {
-                        updateStatus("เชื่อมต่อคลาวด์สำเร็จ", "success");
+                        updateStatus("เชื่อมต่อสำเร็จ (Realtime DB)", "success");
                         startListening();
-                    } else {
-                        updateStatus("การยืนยันตัวตนล้มเหลว", "error");
                     }
                 });
-
             } catch (error) {
-                console.error("Init Error:", error);
+                console.error("Firebase Error:", error);
                 updateStatus("ล้มเหลว: " + error.message, "error");
             }
         };
 
         function startListening() {
             if (!user || !db) return;
+            const regRef = ref(db, 'registrations');
             
-            // ใช้คอลเลกชันชื่อ 'registrations'
-            const collectionPath = collection(db, 'registrations');
-            
-            onSnapshot(collectionPath, (snapshot) => {
-                const docs = [];
-                snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+            onValue(regRef, (snapshot) => {
+                const data = snapshot.val();
+                const items = [];
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        items.push({ id: key, ...data[key] });
+                    });
+                }
                 
-                // เรียงลำดับตามเวลาล่าสุด
-                docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                
-                renderList(docs);
-                if (dataCountEl) dataCountEl.innerText = `${docs.length} รายการ`;
+                items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                renderList(items);
+                if (dataCountEl) dataCountEl.innerText = `${items.length} รายการ`;
             }, (error) => {
-                console.error("Firestore Error:", error);
+                console.error("RTDB Error:", error);
                 if (listContainer) {
                     listContainer.innerHTML = `
-                        <div class="p-8 text-center text-red-500">
-                            <p class="font-bold">เข้าถึงข้อมูลไม่ได้</p>
-                            <p class="text-xs mt-2 text-slate-400">กรุณาตั้งค่า Firestore Security Rules เป็นสาธารณะ หรืออนุญาตให้ผู้ใช้ที่ล็อกอินอ่านได้</p>
+                        <div class="p-8 text-center text-red-500 font-bold">
+                            เข้าถึงข้อมูลไม่ได้<br>
+                            <span class="text-xs font-normal">กรุณาตั้งค่า Rules ในหน้า Realtime Database เป็นสาธารณะ</span>
                         </div>`;
                 }
             });
@@ -211,7 +205,7 @@
                     <div class="flex justify-between items-start mb-2">
                         <h4 class="font-bold text-slate-800 text-lg">${escapeHtml(item.name || 'ไม่ระบุชื่อ')}</h4>
                         <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
-                            ${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleString('th-TH') : 'กำลังส่ง...'}
+                            ${item.timestamp ? new Date(item.timestamp).toLocaleString('th-TH') : 'เมื่อสักครู่'}
                         </span>
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mb-3">
@@ -238,17 +232,17 @@
             submitBtn.innerHTML = `<span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>`;
 
             try {
-                await addDoc(collection(db, 'registrations'), {
+                const regRef = ref(db, 'registrations');
+                await push(regRef, {
                     name: document.getElementById('name').value,
                     phone: document.getElementById('phone').value,
                     email: document.getElementById('email').value,
                     message: document.getElementById('message').value,
-                    createdAt: serverTimestamp()
+                    timestamp: serverTimestamp()
                 });
                 regForm.reset();
                 showToast("✅ บันทึกสำเร็จ!");
             } catch (error) {
-                console.error("Submit Error:", error);
                 showToast("❌ ล้มเหลว: " + error.message);
             } finally {
                 submitBtn.disabled = false;
