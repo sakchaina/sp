@@ -27,7 +27,7 @@
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center">
             <div class="text-center md:text-left mb-6 md:mb-0">
                 <h1 class="text-3xl md:text-4xl font-bold mb-2 text-white">Registration Portal</h1>
-                <p class="text-blue-100">ระบบรับข้อมูล Real-time (No-Billing Version)</p>
+                <p class="text-blue-100">ระบบจัดการข้อมูล Real-time (เพิ่ม แก้ไข ลบ)</p>
             </div>
             <div id="connectionStatus" class="flex items-center bg-blue-700 px-4 py-2 rounded-full text-sm">
                 <span class="w-2 h-2 bg-yellow-400 rounded-full mr-2 loading-pulse"></span>
@@ -42,15 +42,36 @@
             <!-- Form Section -->
             <div class="lg:col-span-5">
                 <div class="glass-card p-8 rounded-3xl shadow-xl sticky top-8 border-t-4 border-blue-500">
-                    <h2 class="text-2xl font-bold mb-6 text-slate-800 text-center">ลงทะเบียนติดต่อกลับ</h2>
+                    <h2 id="formTitle" class="text-2xl font-bold mb-6 text-slate-800 text-center">ลงทะเบียนติดต่อกลับ</h2>
                     
                     <form id="regForm" class="space-y-4">
+                        <input type="hidden" id="editId">
+                        
                         <div>
                             <label class="block text-sm font-medium text-slate-600 mb-1">ชื่อ-นามสกุล</label>
                             <input type="text" id="name" required
                                 class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
                                 placeholder="ระบุชื่อของคุณ">
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-2">เพศ</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="gender" value="ชาย" required class="w-4 h-4 text-blue-600">
+                                    <span class="ml-2 text-slate-700">ชาย</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="gender" value="หญิง" class="w-4 h-4 text-blue-600">
+                                    <span class="ml-2 text-slate-700">หญิง</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="radio" name="gender" value="อื่นๆ" class="w-4 h-4 text-blue-600">
+                                    <span class="ml-2 text-slate-700">อื่นๆ</span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-slate-600 mb-1">เบอร์โทรศัพท์</label>
                             <input type="tel" id="phone" required
@@ -69,10 +90,15 @@
                                 class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
                                 placeholder="ระบุเรื่องที่สนใจ..."></textarea>
                         </div>
-                        <button type="submit" id="submitBtn"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-[0.98] transition-all flex justify-center items-center disabled:bg-slate-400">
-                            <span>ส่งข้อมูลทันที</span>
-                        </button>
+                        <div class="flex gap-2">
+                            <button type="submit" id="submitBtn"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-[0.98] transition-all flex justify-center items-center disabled:bg-slate-400">
+                                <span id="btnText">ส่งข้อมูลทันที</span>
+                            </button>
+                            <button type="button" id="cancelEdit" class="hidden px-4 bg-slate-200 hover:bg-slate-300 rounded-xl font-bold transition">
+                                ยกเลิก
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -85,12 +111,12 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            รายการล่าสุด (Real-time)
+                            จัดการรายการ (Real-time)
                         </h3>
                         <span id="dataCount" class="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full">0 รายการ</span>
                     </div>
                     
-                    <div id="listContainer" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+                    <div id="listContainer" class="divide-y divide-slate-100 max-h-[700px] overflow-y-auto">
                         <div id="initialLoader" class="p-12 text-center text-slate-400">
                             <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                             <p>กำลังโหลดข้อมูล...</p>
@@ -111,7 +137,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, push, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, push, set, update, remove, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         // --- ตั้งค่า Firebase ---
         const firebaseConfig = {
@@ -131,8 +157,12 @@
         const dataCountEl = document.getElementById('dataCount');
         const regForm = document.getElementById('regForm');
         const submitBtn = document.getElementById('submitBtn');
+        const cancelEditBtn = document.getElementById('cancelEdit');
+        const formTitle = document.getElementById('formTitle');
+        const btnText = document.getElementById('btnText');
 
         let db, auth, user = null;
+        let globalData = [];
 
         const updateStatus = (text, type = 'waiting') => {
             if (!statusText) return;
@@ -155,7 +185,7 @@
                 onAuthStateChanged(auth, (currentUser) => {
                     user = currentUser;
                     if (user) {
-                        updateStatus("เชื่อมต่อสำเร็จ (Realtime DB)", "success");
+                        updateStatus("เชื่อมต่อสำเร็จ", "success");
                         startListening();
                     }
                 });
@@ -171,24 +201,20 @@
             
             onValue(regRef, (snapshot) => {
                 const data = snapshot.val();
-                const items = [];
+                globalData = [];
                 if (data) {
                     Object.keys(data).forEach(key => {
-                        items.push({ id: key, ...data[key] });
+                        globalData.push({ id: key, ...data[key] });
                     });
                 }
                 
-                items.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                renderList(items);
-                if (dataCountEl) dataCountEl.innerText = `${items.length} รายการ`;
+                globalData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                renderList(globalData);
+                if (dataCountEl) dataCountEl.innerText = `${globalData.length} รายการ`;
             }, (error) => {
                 console.error("RTDB Error:", error);
                 if (listContainer) {
-                    listContainer.innerHTML = `
-                        <div class="p-8 text-center text-red-500 font-bold">
-                            เข้าถึงข้อมูลไม่ได้<br>
-                            <span class="text-xs font-normal">กรุณาตั้งค่า Rules ในหน้า Realtime Database เป็นสาธารณะ</span>
-                        </div>`;
+                    listContainer.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">เข้าถึงข้อมูลไม่ได้ (กรุณาเช็ค Rules)</div>`;
                 }
             });
         }
@@ -201,12 +227,27 @@
             }
 
             listContainer.innerHTML = items.map(item => `
-                <div class="p-6 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+                <div class="p-6 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 group">
                     <div class="flex justify-between items-start mb-2">
-                        <h4 class="font-bold text-slate-800 text-lg">${escapeHtml(item.name || 'ไม่ระบุชื่อ')}</h4>
-                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
-                            ${item.timestamp ? new Date(item.timestamp).toLocaleString('th-TH') : 'เมื่อสักครู่'}
-                        </span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-slate-800 text-lg">${escapeHtml(item.name || 'ไม่ระบุชื่อ')}</h4>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${item.gender === 'ชาย' ? 'bg-blue-100 text-blue-600' : item.gender === 'หญิง' ? 'bg-pink-100 text-pink-600' : 'bg-slate-100 text-slate-600'}">
+                                    ${item.gender || 'N/A'}
+                                </span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                                ${item.timestamp ? new Date(item.timestamp).toLocaleString('th-TH') : 'เมื่อสักครู่'}
+                            </span>
+                        </div>
+                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="window.editItem('${item.id}')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition" title="แก้ไข">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button onclick="window.deleteItem('${item.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="ลบ">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mb-3">
                         <span class="flex items-center">
@@ -223,30 +264,89 @@
             `).join('');
         }
 
+        // ฟังก์ชันสำหรับเปิดโหมดแก้ไข
+        window.editItem = (id) => {
+            const item = globalData.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('editId').value = id;
+            document.getElementById('name').value = item.name || '';
+            document.getElementById('phone').value = item.phone || '';
+            document.getElementById('email').value = item.email || '';
+            document.getElementById('message').value = item.message || '';
+            
+            // ตั้งค่าวิทยุเพศ
+            const genders = document.getElementsByName('gender');
+            for(const g of genders) {
+                if(g.value === item.gender) g.checked = true;
+            }
+
+            formTitle.innerText = "แก้ไขข้อมูลผู้ลงทะเบียน";
+            btnText.innerText = "บันทึกการแก้ไข";
+            cancelEditBtn.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // ยกเลิกการแก้ไข
+        cancelEditBtn.onclick = () => {
+            regForm.reset();
+            document.getElementById('editId').value = '';
+            formTitle.innerText = "ลงทะเบียนติดต่อกลับ";
+            btnText.innerText = "ส่งข้อมูลทันที";
+            cancelEditBtn.classList.add('hidden');
+        };
+
+        // ฟังก์ชันสำหรับลบข้อมูล
+        window.deleteItem = async (id) => {
+            if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้?')) return;
+            try {
+                await remove(ref(db, `registrations/${id}`));
+                showToast("🗑️ ลบข้อมูลเรียบร้อย!");
+            } catch (error) {
+                showToast("❌ ลบไม่สำเร็จ: " + error.message);
+            }
+        };
+
         regForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!user || !db) return showToast("⚠️ ระบบยังไม่พร้อม");
 
+            const editId = document.getElementById('editId').value;
             submitBtn.disabled = true;
-            const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = `<span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>`;
+            const originalBtnText = btnText.innerText;
+            btnText.innerText = "กำลังบันทึก...";
+
+            // ดึงค่าเพศ
+            const genderVal = document.querySelector('input[name="gender"]:checked').value;
+
+            const payload = {
+                name: document.getElementById('name').value,
+                gender: genderVal,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                message: document.getElementById('message').value,
+                timestamp: editId ? (globalData.find(i => i.id === editId)?.timestamp || serverTimestamp()) : serverTimestamp(),
+                lastUpdated: serverTimestamp()
+            };
 
             try {
-                const regRef = ref(db, 'registrations');
-                await push(regRef, {
-                    name: document.getElementById('name').value,
-                    phone: document.getElementById('phone').value,
-                    email: document.getElementById('email').value,
-                    message: document.getElementById('message').value,
-                    timestamp: serverTimestamp()
-                });
-                regForm.reset();
-                showToast("✅ บันทึกสำเร็จ!");
+                if (editId) {
+                    // โหมดแก้ไข
+                    await update(ref(db, `registrations/${editId}`), payload);
+                    showToast("✅ อัปเดตข้อมูลสำเร็จ!");
+                    cancelEditBtn.click();
+                } else {
+                    // โหมดเพิ่มใหม่
+                    const regRef = ref(db, 'registrations');
+                    await push(regRef, payload);
+                    regForm.reset();
+                    showToast("✅ บันทึกข้อมูลสำเร็จ!");
+                }
             } catch (error) {
                 showToast("❌ ล้มเหลว: " + error.message);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = originalBtnText;
+                btnText.innerText = originalBtnText;
             }
         });
 
