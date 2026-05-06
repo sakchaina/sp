@@ -26,12 +26,12 @@
     <div class="bg-blue-600 text-white py-12 px-6 shadow-lg mb-8">
         <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center">
             <div class="text-center md:text-left mb-6 md:mb-0">
-                <h1 class="text-3xl md:text-4xl font-bold mb-2">Registration Portal</h1>
+                <h1 class="text-3xl md:text-4xl font-bold mb-2 text-white">Registration Portal</h1>
                 <p class="text-blue-100">ระบบรับข้อมูลความเร็วสูง เชื่อมต่อ Cloud Database โดยตรง</p>
             </div>
             <div id="connectionStatus" class="flex items-center bg-blue-700 px-4 py-2 rounded-full text-sm">
                 <span class="w-2 h-2 bg-yellow-400 rounded-full mr-2 loading-pulse"></span>
-                กำลังเริ่มต้นระบบ...
+                <span id="statusText">กำลังเริ่มต้นระบบ...</span>
             </div>
         </div>
     </div>
@@ -70,7 +70,7 @@
                                 placeholder="สอบถามบริการด้าน..."></textarea>
                         </div>
                         <button type="submit" id="submitBtn"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-[0.98] transition-all flex justify-center items-center">
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-[0.98] transition-all flex justify-center items-center disabled:bg-slate-400">
                             <span>ส่งข้อมูลทันที</span>
                         </button>
                     </form>
@@ -94,7 +94,7 @@
                         <!-- Loading State -->
                         <div id="loadingIndicator" class="p-12 text-center text-slate-400">
                             <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                            <p>กำลังดึงข้อมูลจาก Cloud...</p>
+                            <p>กำลังรอการเชื่อมต่อฐานข้อมูล...</p>
                         </div>
                     </div>
                 </div>
@@ -114,65 +114,78 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuration
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'speed-reg-app';
-
-        // Initialize
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
+        // Global Elements
         const statusEl = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('statusText');
         const listContainer = document.getElementById('listContainer');
         const dataCountEl = document.getElementById('dataCount');
         const regForm = document.getElementById('regForm');
         const submitBtn = document.getElementById('submitBtn');
 
-        let user = null;
+        let db, auth, user = null;
+        let appId = 'speed-reg-app';
 
-        // 1. Authentication (Rule 3 Fix)
-        const initAuth = async () => {
+        const updateStatus = (text, type = 'waiting') => {
+            statusText.innerText = text;
+            const dot = statusEl.querySelector('span:first-child');
+            dot.className = `w-2 h-2 rounded-full mr-2 ${type === 'success' ? 'bg-green-400' : type === 'error' ? 'bg-red-400' : 'bg-yellow-400 loading-pulse'}`;
+        };
+
+        const initApp = async () => {
             try {
-                statusEl.innerHTML = `<span class="w-2 h-2 bg-yellow-400 rounded-full mr-2 loading-pulse"></span> กำลังตรวจสอบสิทธิ์...`;
+                // 1. ตรวจสอบ Configuration
+                if (typeof __firebase_config === 'undefined') {
+                    throw new Error("ไม่พบการตั้งค่า Firebase");
+                }
                 
-                // Priority to Custom Token
+                const firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'speed-reg-app';
+
+                // 2. เริ่มต้น Firebase
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                updateStatus("กำลังตรวจสอบสิทธิ์...");
+
+                // 3. จัดการ Authentication (Rule 3)
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
 
-                // Listen for State Change
+                // 4. ติดตามสถานะ Auth
                 onAuthStateChanged(auth, (currentUser) => {
                     user = currentUser;
                     if (user) {
-                        statusEl.innerHTML = `<span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span> เชื่อมต่อสำเร็จ`;
+                        updateStatus("เชื่อมต่อสำเร็จ", "success");
                         startListening();
                     } else {
-                        statusEl.innerHTML = `<span class="w-2 h-2 bg-red-400 rounded-full mr-2"></span> ไม่พบข้อมูลผู้ใช้`;
+                        updateStatus("ไม่พบข้อมูลผู้ใช้", "error");
                     }
                 });
+
             } catch (error) {
-                console.error("Auth Error:", error);
-                statusEl.innerHTML = `<span class="w-2 h-2 bg-red-400 rounded-full mr-2"></span> การเชื่อมต่อล้มเหลว`;
+                console.error("Initialization Error:", error);
+                updateStatus("การเชื่อมต่อล้มเหลว: " + error.message, "error");
+                listContainer.innerHTML = `<div class="p-8 text-center text-red-500">ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณารีเฟรชหน้าจอ</div>`;
             }
         };
 
-        // 2. Real-time Listener (Rule 1)
+        // เริ่มดึงข้อมูลแบบ Real-time (Rule 1 & 2)
         function startListening() {
             if (!user) return;
 
-            const dataPath = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
+            const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
             
-            // Listen for changes
-            onSnapshot(dataPath, (snapshot) => {
+            onSnapshot(collectionPath, (snapshot) => {
                 const docs = [];
                 snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
                 
-                // Sort by date (Newest first) in memory
+                // เรียงลำดับใน Memory เพื่อความเร็ว (Rule 2)
                 docs.sort((a, b) => {
                     const timeA = a.createdAt?.seconds || 0;
                     const timeB = b.createdAt?.seconds || 0;
@@ -182,12 +195,11 @@
                 renderList(docs);
                 dataCountEl.innerText = `${docs.length} รายการ`;
             }, (error) => {
-                console.error("Firestore Error:", error);
-                listContainer.innerHTML = `<div class="p-8 text-center text-red-500">ไม่สามารถเข้าถึงข้อมูลได้ (Permission Denied)</div>`;
+                console.error("Firestore Listen Error:", error);
+                listContainer.innerHTML = `<div class="p-8 text-center text-red-500">ข้อผิดพลาด: ไม่สามารถเข้าถึงข้อมูลได้ (Permission Denied)</div>`;
             });
         }
 
-        // 3. UI Helper
         function renderList(items) {
             if (items.length === 0) {
                 listContainer.innerHTML = `<div class="p-12 text-center text-slate-400">ยังไม่มีรายชื่อลงทะเบียน</div>`;
@@ -217,21 +229,17 @@
             `).join('');
         }
 
-        // 4. Form Action
         regForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!user) {
-                showToast("⚠️ ระบบยังไม่พร้อม กรุณารอการเชื่อมต่อ");
-                return;
-            }
+            if (!user) return showToast("⚠️ ระบบยังไม่พร้อม กรุณารอสักครู่");
 
             submitBtn.disabled = true;
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.innerHTML = `<span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span> กำลังส่ง...`;
 
             try {
-                const dataPath = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
-                await addDoc(dataPath, {
+                const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
+                await addDoc(collectionPath, {
                     name: document.getElementById('name').value,
                     phone: document.getElementById('phone').value,
                     email: document.getElementById('email').value,
@@ -250,7 +258,6 @@
             }
         });
 
-        // Utilities
         function showToast(msg) {
             const toast = document.getElementById('toast');
             document.getElementById('toastMsg').innerText = msg;
@@ -259,13 +266,14 @@
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // Start App
-        initAuth();
+        // เริ่มต้นการทำงาน
+        window.addEventListener('load', initApp);
     </script>
 </body>
 </html>
