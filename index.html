@@ -25,7 +25,7 @@
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-4 -mt-10 pb-20">
+    <main class="max-w-6xl mx-auto px-4 -mt-10 pb-10">
         <div class="grid md:grid-cols-2 gap-8 items-start">
             
             <!-- Left Side: Content -->
@@ -99,7 +99,7 @@
                 <div id="statusMessage" class="hidden mt-6 p-4 rounded-xl text-center"></div>
             </div>
 
-            <!-- Success State (Hidden initially) -->
+            <!-- Success State -->
             <div id="successState" class="hidden glass-morphism p-12 rounded-3xl shadow-xl text-center">
                 <div class="bg-green-100 text-green-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,8 +110,44 @@
                 <p class="text-slate-600 text-lg mb-8">เราได้รับข้อมูลของคุณเรียบร้อยแล้ว ทีมงานจะติดต่อกลับหาคุณโดยเร็วที่สุด</p>
                 <button onclick="location.reload()" class="text-blue-600 font-semibold hover:underline">ส่งข้อมูลอีกครั้ง</button>
             </div>
-
         </div>
+
+        <!-- Registered Users Table Section -->
+        <section class="mt-20 bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 class="text-xl font-bold text-slate-800 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    รายชื่อผู้ลงทะเบียนล่าสุด
+                </h2>
+                <button onclick="fetchRegisteredUsers()" id="refreshBtn" class="text-sm bg-white border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-100 transition flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    รีเฟรชข้อมูล
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-500 text-sm uppercase">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">วัน-เวลา</th>
+                            <th class="px-6 py-4 font-semibold">ชื่อ-นามสกุล</th>
+                            <th class="px-6 py-4 font-semibold">เบอร์โทรศัพท์</th>
+                            <th class="px-6 py-4 font-semibold">อีเมล</th>
+                            <th class="px-6 py-4 font-semibold">ข้อความ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody" class="divide-y divide-slate-100 text-slate-600">
+                        <!-- Data will be loaded here -->
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-slate-400">กำลังโหลดข้อมูล...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 
     <footer class="text-center py-10 text-slate-400 text-sm">
@@ -119,7 +155,7 @@
     </footer>
 
     <script>
-        // *** สำคัญ: นำ URL ที่ได้จาก Google Apps Script มาใส่ตรงนี้ ***
+        // *** ตั้งค่า URL ของ Google Apps Script เรียบร้อยแล้ว ***
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1NSbI-dSw16JeY9RmW8CRTtPmXhgrAa9q41Fl3n1XIhLF04rI7YsYXEjrveCfbXHfhw/exec';
 
         const form = document.getElementById('registrationForm');
@@ -127,11 +163,52 @@
         const statusMsg = document.getElementById('statusMessage');
         const formContainer = document.getElementById('formContainer');
         const successState = document.getElementById('successState');
+        const userTableBody = document.getElementById('userTableBody');
 
+        // ฟังก์ชันดึงข้อมูลมาแสดงผล
+        async function fetchRegisteredUsers() {
+            if (!SCRIPT_URL || SCRIPT_URL.includes('ใส่_URL')) return;
+
+            const refreshBtn = document.getElementById('refreshBtn');
+            refreshBtn.disabled = true;
+            refreshBtn.classList.add('opacity-50');
+
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    userTableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-slate-400">ยังไม่มีข้อมูลการลงทะเบียน</td></tr>';
+                } else {
+                    userTableBody.innerHTML = '';
+                    // แสดงผลข้อมูลล่าสุดขึ้นก่อน (Reverse data)
+                    data.reverse().forEach(user => {
+                        const date = new Date(user.timestamp).toLocaleString('th-TH');
+                        const row = `
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-6 py-4 text-sm">${date}</td>
+                                <td class="px-6 py-4 font-medium text-slate-800">${user.name}</td>
+                                <td class="px-6 py-4">${user.phone}</td>
+                                <td class="px-6 py-4">${user.email || '-'}</td>
+                                <td class="px-6 py-4 text-sm max-w-xs truncate" title="${user.message}">${user.message || '-'}</td>
+                            </tr>
+                        `;
+                        userTableBody.insertAdjacentHTML('beforeend', row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                userTableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-red-500">ไม่สามารถโหลดข้อมูลได้ (โปรดตรวจสอบการเปิดสิทธิ์เป็น "Anyone" ใน Apps Script)</td></tr>';
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.classList.remove('opacity-50');
+            }
+        }
+
+        // ส่งข้อมูลแบบฟอร์ม
         form.addEventListener('submit', e => {
             e.preventDefault();
             
-            // ป้องกันการกดซ้ำ
             submitBtn.disabled = true;
             submitBtn.innerText = 'กำลังส่งข้อมูล...';
             statusMsg.classList.remove('hidden', 'bg-red-100', 'text-red-700');
@@ -148,6 +225,8 @@
                 if(response.ok) {
                     formContainer.classList.add('hidden');
                     successState.classList.remove('hidden');
+                    // เมื่อส่งสำเร็จ ให้โหลดข้อมูลในตารางใหม่
+                    fetchRegisteredUsers();
                 } else {
                     throw new Error('Network response was not ok.');
                 }
@@ -161,6 +240,9 @@
                 submitBtn.innerText = 'ส่งข้อมูล';
             });
         });
+
+        // โหลดข้อมูลเมื่อเปิดหน้าเว็บ
+        window.onload = fetchRegisteredUsers;
     </script>
 </body>
 </html>
