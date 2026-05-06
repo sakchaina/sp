@@ -91,7 +91,6 @@
                     </div>
                     
                     <div id="listContainer" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                        <!-- Loading State -->
                         <div id="loadingIndicator" class="p-12 text-center text-slate-400">
                             <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                             <p>กำลังรอการเชื่อมต่อฐานข้อมูล...</p>
@@ -103,20 +102,17 @@
         </div>
     </main>
 
-    <!-- UI Components -->
     <div id="toast" class="fixed bottom-8 right-8 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
         <div class="bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center">
             <span id="toastMsg">บันทึกสำเร็จ</span>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global Elements
         const statusEl = document.getElementById('connectionStatus');
         const statusText = document.getElementById('statusText');
         const listContainer = document.getElementById('listContainer');
@@ -133,31 +129,34 @@
             dot.className = `w-2 h-2 rounded-full mr-2 ${type === 'success' ? 'bg-green-400' : type === 'error' ? 'bg-red-400' : 'bg-yellow-400 loading-pulse'}`;
         };
 
-        const initApp = async () => {
+        const initApp = async (retries = 5) => {
             try {
-                // 1. ตรวจสอบ Configuration
+                // ตรวจสอบค่า config ด้วยการวนลูปเผื่อกรณีระบบยังเตรียมตัวแปรไม่เสร็จ
                 if (typeof __firebase_config === 'undefined') {
-                    throw new Error("ไม่พบการตั้งค่า Firebase");
+                    if (retries > 0) {
+                        updateStatus(`รอกำหนดค่าระบบ... (${retries})`);
+                        setTimeout(() => initApp(retries - 1), 1000);
+                        return;
+                    }
+                    throw new Error("ไม่พบการตั้งค่า Firebase (กรุณาใช้งานผ่านระบบที่รองรับ)");
                 }
                 
                 const firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
                 appId = typeof __app_id !== 'undefined' ? __app_id : 'speed-reg-app';
 
-                // 2. เริ่มต้น Firebase
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
                 updateStatus("กำลังตรวจสอบสิทธิ์...");
 
-                // 3. จัดการ Authentication (Rule 3)
+                // ดำเนินการตาม Rule 3
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
 
-                // 4. ติดตามสถานะ Auth
                 onAuthStateChanged(auth, (currentUser) => {
                     user = currentUser;
                     if (user) {
@@ -170,33 +169,25 @@
 
             } catch (error) {
                 console.error("Initialization Error:", error);
-                updateStatus("การเชื่อมต่อล้มเหลว: " + error.message, "error");
-                listContainer.innerHTML = `<div class="p-8 text-center text-red-500">ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณารีเฟรชหน้าจอ</div>`;
+                updateStatus("เชื่อมต่อล้มเหลว: " + error.message, "error");
+                listContainer.innerHTML = `<div class="p-8 text-center text-red-500">ขออภัย เกิดข้อผิดพลาดในการตั้งค่าระบบ</div>`;
             }
         };
 
-        // เริ่มดึงข้อมูลแบบ Real-time (Rule 1 & 2)
         function startListening() {
             if (!user) return;
-
             const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
             
             onSnapshot(collectionPath, (snapshot) => {
                 const docs = [];
                 snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
                 
-                // เรียงลำดับใน Memory เพื่อความเร็ว (Rule 2)
-                docs.sort((a, b) => {
-                    const timeA = a.createdAt?.seconds || 0;
-                    const timeB = b.createdAt?.seconds || 0;
-                    return timeB - timeA;
-                });
-                
+                docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderList(docs);
                 dataCountEl.innerText = `${docs.length} รายการ`;
             }, (error) => {
-                console.error("Firestore Listen Error:", error);
-                listContainer.innerHTML = `<div class="p-8 text-center text-red-500">ข้อผิดพลาด: ไม่สามารถเข้าถึงข้อมูลได้ (Permission Denied)</div>`;
+                console.error("Firestore Error:", error);
+                listContainer.innerHTML = `<div class="p-8 text-center text-red-500">ไม่สามารถเข้าถึงข้อมูลได้</div>`;
             });
         }
 
@@ -207,11 +198,11 @@
             }
 
             listContainer.innerHTML = items.map(item => `
-                <div class="p-6 hover:bg-slate-50 transition-colors">
+                <div class="p-6 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
                     <div class="flex justify-between items-start mb-2">
                         <h4 class="font-bold text-slate-800 text-lg">${escapeHtml(item.name || 'ไม่ระบุชื่อ')}</h4>
                         <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
-                            ${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleString('th-TH') : 'เมื่อสักครู่'}
+                            ${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleString('th-TH') : 'กำลังส่ง...'}
                         </span>
                     </div>
                     <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mb-3">
@@ -231,11 +222,11 @@
 
         regForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!user) return showToast("⚠️ ระบบยังไม่พร้อม กรุณารอสักครู่");
+            if (!user) return showToast("⚠️ ระบบยังไม่พร้อม");
 
             submitBtn.disabled = true;
             const originalBtnText = submitBtn.innerHTML;
-            submitBtn.innerHTML = `<span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span> กำลังส่ง...`;
+            submitBtn.innerHTML = `<span class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>`;
 
             try {
                 const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
@@ -246,12 +237,10 @@
                     message: document.getElementById('message').value,
                     createdAt: serverTimestamp()
                 });
-
                 regForm.reset();
-                showToast("✅ บันทึกข้อมูลสำเร็จ!");
+                showToast("✅ บันทึกสำเร็จ!");
             } catch (error) {
-                console.error("Submit Error:", error);
-                showToast("❌ เกิดข้อผิดพลาด กรุณาลองใหม่");
+                showToast("❌ ล้มเหลว: " + error.message);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
@@ -272,8 +261,7 @@
             return div.innerHTML;
         }
 
-        // เริ่มต้นการทำงาน
-        window.addEventListener('load', initApp);
+        window.addEventListener('load', () => initApp());
     </script>
 </body>
 </html>
