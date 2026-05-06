@@ -25,6 +25,14 @@
             from { box-shadow: 0 0 20px rgba(237, 28, 36, 0.4); }
             to { box-shadow: 0 0 50px rgba(237, 28, 36, 0.8); }
         }
+
+        /* ปุ่มรับคิวขนาดใหญ่ */
+        .btn-get-queue {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .btn-get-queue:active {
+            transform: scale(0.9);
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
@@ -37,56 +45,27 @@
     </nav>
 
     <!-- [1] หน้ากดรับคิว: q.html -->
-    <section id="view-q" class="view-section py-8 px-4 bg-white min-h-screen">
-        <div class="max-w-md mx-auto">
-            <div class="text-center mb-8">
-                <div class="inline-block p-4 bg-post-red rounded-full shadow-xl mb-4">
-                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+    <section id="view-q" class="view-section py-8 px-4 bg-white min-h-screen flex flex-col justify-center">
+        <div class="max-w-md mx-auto w-full text-center">
+            <div class="mb-12">
+                <div class="inline-block p-6 bg-post-red rounded-full shadow-2xl mb-6">
+                    <svg class="w-20 h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 </div>
-                <h1 class="text-3xl font-black text-slate-900 uppercase italic">Thailand Post</h1>
-                <p class="text-slate-400 font-bold">ไปรษณีย์ไทย - ยินดีให้บริการ</p>
+                <h1 class="text-4xl font-black text-slate-900 uppercase italic mb-2 tracking-tighter">Thailand Post</h1>
+                <p class="text-slate-400 font-bold text-xl uppercase tracking-widest">ยินดีให้บริการ</p>
             </div>
 
-            <div class="bg-slate-50 p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                <form id="qForm" class="space-y-5">
-                    <div>
-                        <label class="block text-xs font-black text-slate-500 uppercase mb-2">ชื่อ-นามสกุล</label>
-                        <input type="text" id="qName" required class="w-full px-5 py-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-red-500 outline-none transition font-bold" placeholder="กรุณาระบุชื่อ">
-                    </div>
-                    
-                    <div>
-                        <label class="block text-xs font-black text-slate-500 uppercase mb-2">เพศ</label>
-                        <div class="flex gap-4">
-                            <label class="flex-1">
-                                <input type="radio" name="qGender" value="ชาย" required class="hidden peer">
-                                <div class="text-center py-3 rounded-xl border border-slate-200 font-bold peer-checked:bg-post-red peer-checked:text-white peer-checked:border-post-red transition">ชาย</div>
-                            </label>
-                            <label class="flex-1">
-                                <input type="radio" name="qGender" value="หญิง" class="hidden peer">
-                                <div class="text-center py-3 rounded-xl border border-slate-200 font-bold peer-checked:bg-post-red peer-checked:text-white peer-checked:border-post-red transition">หญิง</div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-black text-slate-500 uppercase mb-2">เบอร์โทรศัพท์</label>
-                        <input type="tel" id="qPhone" required class="w-full px-5 py-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-red-500 outline-none transition font-bold" placeholder="08X-XXX-XXXX">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-black text-slate-500 uppercase mb-2">เลือกบริการ</label>
-                        <select id="qService" class="w-full px-5 py-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-red-500 outline-none transition font-bold bg-white">
-                            <option value="ฝากส่งพัสดุ / EMS">ฝากส่งพัสดุ / EMS</option>
-                            <option value="ชำระค่าบริการ / ธนาณัติ">ชำระค่าบริการ / ธนาณัติ</option>
-                            <option value="รับพัสดุ / บริการอื่นๆ">รับพัสดุ / บริการอื่นๆ</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full bg-post-red hover:bg-red-700 text-white font-black py-5 rounded-xl shadow-lg shadow-red-100 transition-all text-xl uppercase italic active:scale-95">
-                        รับบัตรคิว
-                    </button>
-                </form>
+            <div class="px-4">
+                <p class="mb-8 text-slate-500 font-medium text-lg">แตะที่ปุ่มด้านล่างเพื่อรับหมายเลขคิว</p>
+                
+                <button id="btnGetQueue" class="btn-get-queue w-full bg-post-red text-white py-12 rounded-[3rem] shadow-[0_20px_50px_rgba(237,28,36,0.3)] flex flex-col items-center justify-center gap-4 border-b-8 border-red-800">
+                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" /></svg>
+                    <span class="text-4xl font-black uppercase italic tracking-tighter">รับบัตรคิว</span>
+                    <span class="text-sm font-bold opacity-80 uppercase tracking-widest">GET QUEUE TICKET</span>
+                </button>
             </div>
+
+            <p class="mt-12 text-slate-300 font-bold uppercase tracking-widest text-xs">ไปรษณีย์ไทย | THAILAND POST 2024</p>
         </div>
 
         <!-- บัตรคิว Modal -->
@@ -94,8 +73,8 @@
             <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl relative border-t-8 border-post-red">
                 <p class="text-post-red font-black uppercase tracking-widest text-xs mb-4 italic">ไปรษณีย์ไทย / THAILAND POST</p>
                 <div id="ticketNum" class="text-[8rem] font-black text-slate-900 leading-none mb-4 tracking-tighter">A01</div>
-                <h3 id="ticketName" class="text-xl font-bold text-slate-600 mb-8">---</h3>
-                <button onclick="closeTicket()" class="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 font-black rounded-xl transition uppercase tracking-widest text-xs">เรียบร้อย</button>
+                <h3 id="ticketName" class="text-xl font-bold text-slate-600 mb-8 uppercase tracking-tighter italic">ลูกค้าทั่วไป / GENERAL</h3>
+                <button onclick="closeTicket()" class="w-full py-5 bg-slate-100 hover:bg-slate-200 text-slate-500 font-black rounded-xl transition uppercase tracking-widest text-sm">ปิดหน้าต่าง</button>
             </div>
         </div>
     </section>
@@ -241,7 +220,8 @@
             // อัปเดตเวลาบนหน้าจอ TV
             setInterval(() => {
                 const now = new Date();
-                document.getElementById('dispTime').innerText = now.toLocaleTimeString('th-TH');
+                const timeEl = document.getElementById('dispTime');
+                if(timeEl) timeEl.innerText = now.toLocaleTimeString('th-TH');
             }, 1000);
         };
 
@@ -258,7 +238,7 @@
             }
         }
 
-        // จัดรูปแบบหมายเลขคิว (A001)
+        // จัดรูปแบบหมายเลขคิว (001)
         function getQueueFormatted(items, item) {
             const index = items.indexOf(item) + 1;
             return index.toString().padStart(3, '0');
@@ -271,26 +251,34 @@
             window.location.hash = name;
         };
 
-        // LOGIC: q.html
-        const qForm = document.getElementById('qForm');
-        qForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('qName').value;
-            const gender = document.querySelector('input[name="qGender"]:checked').value;
-            const phone = document.getElementById('qPhone').value;
-            const service = document.getElementById('qService').value;
+        // LOGIC: q.html (แบบกดรับคิวทันที)
+        const btnGetQueue = document.getElementById('btnGetQueue');
+        btnGetQueue.addEventListener('click', async () => {
+            btnGetQueue.disabled = true;
+            btnGetQueue.classList.add('opacity-50');
 
-            await push(ref(db, 'registrations'), {
-                name, gender, phone, message: service,
-                status: 'waiting', timestamp: serverTimestamp()
-            });
+            try {
+                await push(ref(db, 'registrations'), {
+                    name: 'ลูกค้าทั่วไป',
+                    gender: '-',
+                    phone: '-',
+                    message: 'บริการทั่วไป',
+                    status: 'waiting',
+                    timestamp: serverTimestamp()
+                });
 
-            const qNum = (allQueues.length + 1).toString().padStart(3, '0');
-            document.getElementById('ticketNum').innerText = qNum;
-            document.getElementById('ticketName').innerText = name;
-            document.getElementById('ticketModal').classList.remove('hidden');
-            qForm.reset();
+                const qNum = (allQueues.length + 1).toString().padStart(3, '0');
+                document.getElementById('ticketNum').innerText = qNum;
+                document.getElementById('ticketName').innerText = 'ลูกค้าทั่วไป';
+                document.getElementById('ticketModal').classList.remove('hidden');
+            } catch (e) {
+                showToast("❌ ระบบขัดข้อง กรุณาลองใหม่");
+            } finally {
+                btnGetQueue.disabled = false;
+                btnGetQueue.classList.remove('opacity-50');
+            }
         });
+
         window.closeTicket = () => document.getElementById('ticketModal').classList.add('hidden');
 
         // LOGIC: index.php
@@ -299,28 +287,37 @@
             const waiting = items.filter(i => i.status === 'waiting');
             const done = items.filter(i => i.status === 'done');
 
+            const dispNum = document.getElementById('dispNum');
+            const dispCounterText = document.getElementById('dispCounterText');
+            const dispCounterBox = document.getElementById('dispCounterBox');
+            const dispLastCall = document.getElementById('dispLastCall');
+
             if (calling) {
                 const num = getQueueFormatted(items, calling);
-                document.getElementById('dispNum').innerText = num;
-                document.getElementById('dispCounterText').innerText = `เชิญที่ช่อง ${calling.counter}`;
-                document.getElementById('dispCounterBox').classList.add('calling-glow');
-                document.getElementById('dispLastCall').innerText = num;
+                if(dispNum) dispNum.innerText = num;
+                if(dispCounterText) dispCounterText.innerText = `เชิญที่ช่อง ${calling.counter}`;
+                if(dispCounterBox) dispCounterBox.classList.add('calling-glow');
+                if(dispLastCall) dispLastCall.innerText = num;
             } else {
-                document.getElementById('dispNum').innerText = "---";
-                document.getElementById('dispCounterText').innerText = `ยินดีให้บริการ`;
-                document.getElementById('dispCounterBox').classList.remove('calling-glow');
+                if(dispNum) dispNum.innerText = "---";
+                if(dispCounterText) dispCounterText.innerText = `ยินดีให้บริการ`;
+                if(dispCounterBox) dispCounterBox.classList.remove('calling-glow');
             }
-            document.getElementById('dispWaiting').innerText = waiting.length;
-            document.getElementById('dispDone').innerText = done.length;
+            const w = document.getElementById('dispWaiting');
+            const d = document.getElementById('dispDone');
+            if(w) w.innerText = waiting.length;
+            if(d) d.innerText = done.length;
         }
 
         // LOGIC: staff.html
         function updateStaff(items) {
             const list = document.getElementById('staffList');
-            document.getElementById('staffWaitingCount').innerText = items.filter(i => i.status === 'waiting').length;
+            const waitCountEl = document.getElementById('staffWaitingCount');
+            if(waitCountEl) waitCountEl.innerText = items.filter(i => i.status === 'waiting').length;
 
+            if (!list) return;
             if (items.length === 0) {
-                list.innerHTML = `<div class="p-20 text-center text-slate-300 font-bold italic">ยังไม่มีรายการคิว</div>`;
+                list.innerHTML = `<div class="p-20 text-center text-slate-300 font-bold italic text-lg uppercase tracking-widest">NO DATA</div>`;
                 return;
             }
 
@@ -336,7 +333,7 @@
                         <div class="w-16 h-16 rounded-xl flex items-center justify-center font-black text-2xl shadow-sm ${isCalling ? 'bg-post-red text-white' : 'bg-white border border-slate-100 text-slate-400'}">${num}</div>
                         <div>
                             <p class="font-black text-slate-800 text-xl tracking-tighter uppercase italic">${escapeHtml(item.name)}</p>
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">${item.message} / ${item.gender}</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">${item.message}</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -356,7 +353,6 @@
         window.callQ = async (id) => {
             const counter = document.getElementById('staffCounter').value;
             const updates = {};
-            // ปัดคิวที่กำลังเรียกอยู่ไปก่อนหน้า
             allQueues.forEach(q => { if(q.status === 'calling') updates[`registrations/${q.id}/status`] = 'waiting'; });
             updates[`registrations/${id}/status`] = 'calling';
             updates[`registrations/${id}/counter`] = counter;
@@ -371,9 +367,12 @@
 
         function showToast(msg) {
             const t = document.getElementById('toast');
-            document.getElementById('toastMsg').innerText = msg;
-            t.classList.remove('translate-y-32', 'opacity-0');
-            setTimeout(() => t.classList.add('translate-y-32', 'opacity-0'), 3000);
+            const m = document.getElementById('toastMsg');
+            if(m) m.innerText = msg;
+            if(t) {
+                t.classList.remove('translate-y-32', 'opacity-0');
+                setTimeout(() => t.classList.add('translate-y-32', 'opacity-0'), 3000);
+            }
         }
 
         function escapeHtml(text) {
