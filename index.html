@@ -3,184 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Thailand Post - ระบบจัดการคิวอัจฉริยะ</title>
+    <title>Thailand Post - Smart Queue System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Kanit', sans-serif; }
-        :root { --th-post-red: #ED1C24; }
+        :root { --th-post-red: #ED1C24; --th-post-dark: #2D2926; }
         .bg-post-red { background-color: var(--th-post-red); }
         .text-post-red { color: var(--th-post-red); }
         .border-post-red { border-color: var(--th-post-red); }
         
         .view-section { display: none; }
-        .view-active { display: block; animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .view-active { display: block; animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .display-screen { background-color: #1a1a1a; color: white; }
+        .display-screen { background: radial-gradient(circle at center, #2d2d2d 0%, #121212 100%); color: white; }
         .calling-glow {
-            animation: glow 1s infinite alternate;
+            animation: pulse-glow 1.5s infinite;
         }
-        @keyframes glow {
-            from { box-shadow: 0 0 20px rgba(237, 28, 36, 0.4); }
-            to { box-shadow: 0 0 50px rgba(237, 28, 36, 0.8); }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px rgba(237, 28, 36, 0.3); transform: scale(1); }
+            50% { box-shadow: 0 0 40px rgba(237, 28, 36, 0.6); transform: scale(1.02); }
+            100% { box-shadow: 0 0 10px rgba(237, 28, 36, 0.3); transform: scale(1); }
         }
 
-        /* ปุ่มรับคิวขนาดใหญ่ */
-        .btn-get-queue {
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .btn-kiosk {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: linear-gradient(145deg, #ED1C24, #c4181d);
         }
-        .btn-get-queue:active {
-            transform: scale(0.9);
+        .btn-kiosk:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(237, 28, 36, 0.4); }
+        .btn-kiosk:active { transform: scale(0.95); }
+
+        .ticket-receipt {
+            background-image: radial-gradient(circle at 2px 2px, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, #fff 2px);
+            background-size: 8px 8px;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="bg-[#F4F4F4] text-slate-800 min-h-screen">
 
-    <!-- ส่วนเลือกหน้า (สำหรับการทดสอบในไฟล์เดียว) -->
-    <nav class="bg-slate-900 text-white p-2 flex justify-center gap-4 text-[10px] uppercase font-bold sticky top-0 z-[1000]">
-        <button onclick="switchView('q')" class="hover:text-red-400">ลูกค้า (q.html)</button>
-        <button onclick="switchView('display')" class="hover:text-red-400">หน้าจอทีวี (index.php)</button>
-        <button onclick="switchView('staff')" class="hover:text-red-400">พนักงาน (staff.html)</button>
+    <!-- Role Switcher Navigation -->
+    <nav class="bg-slate-900 text-white py-3 flex justify-center gap-8 text-[11px] font-bold tracking-widest sticky top-0 z-[1000] border-b border-white/5">
+        <button onclick="switchView('q')" class="flex items-center gap-2 opacity-60 hover:opacity-100 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>ลูกค้า</button>
+        <button onclick="switchView('display')" class="flex items-center gap-2 opacity-60 hover:opacity-100 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>หน้าจอ TV</button>
+        <button onclick="switchView('staff')" class="flex items-center gap-2 opacity-60 hover:opacity-100 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>พนักงาน</button>
     </nav>
 
-    <!-- [1] หน้ากดรับคิว: q.html -->
-    <section id="view-q" class="view-section py-8 px-4 bg-white min-h-screen flex flex-col justify-center">
-        <div class="max-w-md mx-auto w-full text-center">
-            <div class="mb-12">
-                <div class="inline-block p-6 bg-post-red rounded-full shadow-2xl mb-6">
-                    <svg class="w-20 h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+    <!-- [1] หน้ากดรับคิว: q.html (Kiosk View) -->
+    <section id="view-q" class="view-section py-12 px-6 bg-white min-h-screen flex flex-col items-center justify-center">
+        <div class="max-w-lg w-full text-center">
+            <div class="mb-16">
+                <div class="inline-block p-1 bg-post-red rounded-[2.5rem] shadow-2xl mb-8 transform -rotate-3">
+                    <div class="bg-white p-6 rounded-[2.3rem]">
+                        <svg class="w-20 h-20 text-post-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    </div>
                 </div>
-                <h1 class="text-4xl font-black text-slate-900 uppercase italic mb-2 tracking-tighter">Thailand Post</h1>
-                <p class="text-slate-400 font-bold text-xl uppercase tracking-widest">ยินดีให้บริการ</p>
+                <h1 class="text-5xl font-extrabold text-slate-900 tracking-tighter uppercase italic mb-2">Thailand Post</h1>
+                <div class="flex items-center justify-center gap-3">
+                    <span class="h-[2px] w-8 bg-post-red"></span>
+                    <p class="text-slate-400 font-bold tracking-[0.3em] text-sm uppercase">Smart Queue Kiosk</p>
+                    <span class="h-[2px] w-8 bg-post-red"></span>
+                </div>
             </div>
 
-            <div class="px-4">
-                <p class="mb-8 text-slate-500 font-medium text-lg">แตะที่ปุ่มด้านล่างเพื่อรับหมายเลขคิว</p>
-                
-                <button id="btnGetQueue" class="btn-get-queue w-full bg-post-red text-white py-12 rounded-[3rem] shadow-[0_20px_50px_rgba(237,28,36,0.3)] flex flex-col items-center justify-center gap-4 border-b-8 border-red-800">
-                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" /></svg>
-                    <span class="text-4xl font-black uppercase italic tracking-tighter">รับบัตรคิว</span>
-                    <span class="text-sm font-bold opacity-80 uppercase tracking-widest">GET QUEUE TICKET</span>
+            <div class="space-y-10">
+                <button id="btnGetQueue" class="btn-kiosk w-full text-white py-16 rounded-[4rem] flex flex-col items-center justify-center gap-6 shadow-2xl relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg class="w-20 h-20 group-hover:scale-110 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>
+                    <div class="text-center">
+                        <span class="text-5xl font-black uppercase italic tracking-tighter block mb-1">รับบัตรคิว</span>
+                        <span class="text-xs font-bold tracking-[0.4em] opacity-70 uppercase">Get Your Ticket Here</span>
+                    </div>
                 </button>
+                <p class="text-slate-300 font-semibold tracking-widest text-[10px] uppercase">ยินดีต้อนรับสู่บริการไปรษณีย์ไทย</p>
             </div>
-
-            <p class="mt-12 text-slate-300 font-bold uppercase tracking-widest text-xs">ไปรษณีย์ไทย | THAILAND POST 2024</p>
         </div>
 
-        <!-- บัตรคิว Modal -->
-        <div id="ticketModal" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-6 z-[2000]">
-            <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full text-center shadow-2xl relative border-t-8 border-post-red">
-                <p class="text-post-red font-black uppercase tracking-widest text-xs mb-4 italic">ไปรษณีย์ไทย / THAILAND POST</p>
-                <div id="ticketNum" class="text-[8rem] font-black text-slate-900 leading-none mb-4 tracking-tighter">A01</div>
-                <h3 id="ticketName" class="text-xl font-bold text-slate-600 mb-8 uppercase tracking-tighter italic">ลูกค้าทั่วไป / GENERAL</h3>
-                <button onclick="closeTicket()" class="w-full py-5 bg-slate-100 hover:bg-slate-200 text-slate-500 font-black rounded-xl transition uppercase tracking-widest text-sm">ปิดหน้าต่าง</button>
+        <!-- Ticket Modal (Receipt Style) -->
+        <div id="ticketModal" class="hidden fixed inset-0 bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-6 z-[2000]">
+            <div class="bg-white rounded-3xl p-10 max-w-xs w-full text-center shadow-2xl relative border-t-8 border-post-red">
+                <p class="text-post-red font-black uppercase tracking-widest text-[10px] mb-6 italic">Queue Receipt / ไปรษณีย์ไทย</p>
+                <div id="ticketNum" class="text-[9rem] font-black text-slate-900 leading-none mb-4 tracking-tighter drop-shadow-sm">001</div>
+                <div class="h-[2px] bg-slate-100 w-full mb-6 border-dashed border-t-2 border-slate-300"></div>
+                <h3 id="ticketName" class="text-lg font-bold text-slate-500 mb-10 tracking-widest uppercase italic">General Customer</h3>
+                <button onclick="closeTicket()" class="w-full py-5 bg-slate-900 text-white font-black rounded-2xl transition hover:bg-post-red uppercase tracking-widest text-xs">เรียบร้อย</button>
             </div>
         </div>
     </section>
 
-    <!-- [2] หน้าจอแสดงผล: index.php (สำหรับ TV) -->
+    <!-- [2] หน้าจอแสดงผล: index.php (TV Display) -->
     <section id="view-display" class="view-section display-screen h-screen flex flex-col overflow-hidden">
-        <!-- Header Display -->
-        <div class="bg-post-red p-6 flex justify-between items-center border-b-4 border-white/20">
-            <div class="flex items-center gap-4">
-                <div class="bg-white p-2 rounded-lg">
-                    <svg class="w-10 h-10 text-post-red" fill="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+        <!-- Modern Header -->
+        <div class="bg-white/5 backdrop-blur-md p-8 flex justify-between items-center border-b border-white/10">
+            <div class="flex items-center gap-6">
+                <div class="bg-post-red p-3 rounded-2xl shadow-lg">
+                    <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 </div>
-                <h1 class="text-3xl font-black italic tracking-tighter">THAILAND POST</h1>
+                <div>
+                    <h1 class="text-4xl font-black italic tracking-tighter text-white">THAILAND POST</h1>
+                    <p class="text-red-500 text-xs font-bold tracking-[0.4em] uppercase">Queue Information System</p>
+                </div>
             </div>
             <div class="text-right">
-                <p id="dispTime" class="text-2xl font-bold">00:00:00</p>
+                <p id="dispTime" class="text-4xl font-black text-white tracking-widest">00:00:00</p>
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Bangkok Time</p>
             </div>
         </div>
 
-        <div class="flex-1 flex flex-col items-center justify-center p-12">
-            <h2 class="text-red-500 font-black uppercase tracking-[0.6em] text-3xl mb-8 animate-pulse">กำลังเรียกคิว / NOW SERVING</h2>
-            <div id="dispNum" class="text-[28rem] font-black leading-none tracking-tighter text-white drop-shadow-[0_20px_50px_rgba(237,28,36,0.3)]">---</div>
-            <div id="dispCounterBox" class="mt-10 bg-white px-24 py-8 rounded-[4rem] flex items-center justify-center transition-all">
-                <span id="dispCounterText" class="text-6xl md:text-8xl font-black italic text-post-red uppercase tracking-tighter">เชิญที่ช่อง 1</span>
+        <div class="flex-1 grid lg:grid-cols-3 gap-0">
+            <!-- Left Side: Statistics -->
+            <div class="bg-black/20 p-12 flex flex-col justify-center gap-12 border-r border-white/5">
+                <div class="text-center group">
+                    <p class="text-slate-500 font-bold text-sm uppercase tracking-[0.3em] mb-4">คิวรอรับบริการ</p>
+                    <p id="dispWaiting" class="text-9xl font-black text-white group-hover:text-post-red transition-colors">0</p>
+                    <p class="text-xs text-slate-600 mt-2 font-bold uppercase">Waiting List</p>
+                </div>
+                <div class="text-center group border-t border-white/5 pt-12">
+                    <p class="text-slate-500 font-bold text-sm uppercase tracking-[0.3em] mb-4">เรียกคิวล่าสุด</p>
+                    <p id="dispLastCall" class="text-9xl font-black text-red-500">---</p>
+                    <p class="text-xs text-slate-600 mt-2 font-bold uppercase">Recent Call</p>
+                </div>
+            </div>
+
+            <!-- Right Side: Main Announcement -->
+            <div class="lg:col-span-2 flex flex-col items-center justify-center p-20 relative">
+                <div class="absolute top-10 left-1/2 -translate-x-1/2">
+                    <span class="text-post-red font-black uppercase tracking-[0.8em] text-2xl animate-pulse">กำลังเรียกคิว / NOW SERVING</span>
+                </div>
+                <div id="dispNum" class="text-[35rem] font-black leading-none tracking-tighter text-white drop-shadow-[0_0_100px_rgba(255,255,255,0.1)]">---</div>
+                <div id="dispCounterBox" class="mt-10 bg-white/5 border-2 border-white/10 px-32 py-10 rounded-[5rem] flex items-center justify-center transition-all">
+                    <span id="dispCounterText" class="text-7xl md:text-9xl font-black italic text-post-red uppercase tracking-tighter">เชิญที่ช่อง 1</span>
+                </div>
             </div>
         </div>
         
-        <!-- Summary Dashboard -->
-        <div class="bg-black/50 p-10 grid grid-cols-3 gap-10 border-t border-white/5">
-            <div class="text-center border-r border-white/10">
-                <p class="text-slate-500 font-black text-lg uppercase mb-2">คิวรอรับบริการ</p>
-                <p id="dispWaiting" class="text-6xl font-black">0</p>
-            </div>
-            <div class="text-center border-r border-white/10">
-                <p class="text-slate-500 font-black text-lg uppercase mb-2">เรียกคิวล่าสุด</p>
-                <p id="dispLastCall" class="text-6xl font-black text-red-500">---</p>
-            </div>
-            <div class="text-center">
-                <p class="text-slate-500 font-black text-lg uppercase mb-2">เสร็จสิ้นวันนี้</p>
-                <p id="dispDone" class="text-6xl font-black text-green-500">0</p>
+        <!-- Scrolling Ticker -->
+        <div class="bg-post-red py-4 overflow-hidden whitespace-nowrap">
+            <div class="inline-block animate-marquee text-white font-bold text-xl uppercase italic tracking-widest">
+                • ยินดีต้อนรับสู่ไปรษณีย์ไทย บริการส่งด่วน EMS ทั่วไทย มั่นใจ รวดเร็ว • THAILAND POST - DELIVERING HAPPINESS TO EVERYONE • THANK YOU FOR USING OUR SERVICES •
             </div>
         </div>
     </section>
 
-    <!-- [3] หน้าพนักงาน: staff.html -->
-    <section id="view-staff" class="view-section py-8 px-6 max-w-6xl mx-auto">
-        <div class="flex items-center justify-between mb-10">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-post-red rounded-2xl shadow-lg">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" /></svg>
+    <!-- [3] หน้าพนักงาน: staff.html (Dashboard View) -->
+    <section id="view-staff" class="view-section py-10 px-8 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row items-center justify-between mb-12 gap-6">
+            <div class="flex items-center gap-6">
+                <div class="p-4 bg-slate-900 rounded-3xl shadow-2xl">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" /></svg>
                 </div>
-                <h1 class="text-4xl font-black text-slate-900 italic tracking-tighter">STAFF CONSOLE</h1>
-            </div>
-            <button onclick="resetAllQueues()" class="text-xs font-bold text-slate-400 hover:text-red-500 transition border-b border-dashed border-slate-300">รีเซ็ตคิวของวันนี้</button>
-        </div>
-
-        <div class="grid lg:grid-cols-4 gap-8">
-            <!-- Counter Settings -->
-            <div class="space-y-6">
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">ช่องบริการของคุณ</p>
-                    <select id="staffCounter" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 font-black text-5xl text-post-red outline-none focus:border-red-500 appearance-none text-center">
-                        <option value="1">01</option>
-                        <option value="2">02</option>
-                        <option value="3">03</option>
-                        <option value="4">04</option>
-                        <option value="5">05</option>
-                    </select>
-                </div>
-                
-                <div class="bg-slate-900 p-8 rounded-[2rem] shadow-xl text-white">
-                    <p class="text-xs font-black uppercase opacity-60 mb-2">คิวรออยู่</p>
-                    <p id="staffWaitingCount" class="text-7xl font-black text-red-500">0</p>
-                </div>
-            </div>
-
-            <!-- Manage List -->
-            <div class="lg:col-span-3 bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                    <h3 class="font-black text-slate-700 uppercase italic">รายการคิวปัจจุบัน</h3>
-                    <div id="systemStatus" class="flex items-center gap-2">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                        <span class="text-[10px] font-black text-slate-400">ONLINE</span>
+                <div>
+                    <h1 class="text-5xl font-black text-slate-900 italic tracking-tighter">OFFICER DASHBOARD</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Connection Stable</span>
                     </div>
                 </div>
-                <div id="staffList" class="divide-y divide-slate-100 max-h-[650px] overflow-y-auto">
-                    <div class="p-20 text-center text-slate-300 font-bold italic">กำลังเชื่อมต่อฐานข้อมูล...</div>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="resetAllQueues()" class="px-6 py-3 bg-white text-slate-400 hover:text-red-500 font-bold rounded-2xl transition border border-slate-200 shadow-sm text-xs uppercase tracking-widest">Reset Daily Queue</button>
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-4 gap-10">
+            <!-- Counter Status Card -->
+            <div class="space-y-8">
+                <div class="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 text-center">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6">Select Your Counter</p>
+                    <div class="relative">
+                        <select id="staffCounter" class="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] p-8 font-black text-7xl text-post-red outline-none focus:border-post-red appearance-none text-center shadow-inner transition-colors">
+                            <option value="1">01</option>
+                            <option value="2">02</option>
+                            <option value="3">03</option>
+                            <option value="4">04</option>
+                            <option value="5">05</option>
+                        </select>
+                        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-bold text-slate-300 uppercase">Station No.</div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-900 p-10 rounded-[3rem] shadow-2xl text-white relative overflow-hidden group">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                        <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <p class="text-xs font-black uppercase opacity-40 tracking-widest mb-2">Waiting in Queue</p>
+                    <p id="staffWaitingCount" class="text-8xl font-black text-post-red">0</p>
+                    <p class="text-[10px] font-bold text-slate-500 mt-4 uppercase">Pending Tickets</p>
+                </div>
+            </div>
+
+            <!-- Management Table -->
+            <div class="lg:col-span-3 bg-white rounded-[3.5rem] shadow-xl border border-slate-100 overflow-hidden">
+                <div class="px-10 py-8 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                    <div class="flex items-center gap-3">
+                        <span class="w-2 h-6 bg-post-red rounded-full"></span>
+                        <h3 class="font-black text-slate-900 uppercase italic text-lg tracking-tight">Active Queue Management</h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="px-4 py-1 bg-indigo-50 text-indigo-500 rounded-full text-[10px] font-black">REAL-TIME</div>
+                    </div>
+                </div>
+                <div id="staffList" class="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
+                    <div class="p-24 text-center text-slate-300 font-bold italic text-xl uppercase tracking-widest">Connecting...</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- แจ้งเตือน Toast -->
-    <div id="toast" class="fixed bottom-10 right-10 transform translate-y-32 opacity-0 transition-all duration-500 pointer-events-none z-[5000]">
-        <div class="bg-slate-900 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center border border-white/10 font-bold text-xs italic tracking-widest uppercase">
-            <span id="toastMsg">บันทึกข้อมูลเรียบร้อย</span>
+    <!-- Custom Premium Toast -->
+    <div id="toast" class="fixed bottom-12 right-12 transform translate-y-32 opacity-0 transition-all duration-700 pointer-events-none z-[5000]">
+        <div class="bg-slate-900 text-white pl-8 pr-12 py-6 rounded-[2.5rem] shadow-2xl flex items-center border border-white/10 group">
+            <div class="w-2 h-2 bg-post-red rounded-full mr-4 animate-ping"></div>
+            <span id="toastMsg" class="font-black text-sm uppercase italic tracking-widest">Notification</span>
         </div>
     </div>
 
-    <!-- [FIREBASE LOGIC] -->
+    <!-- System Logic (Firebase & UI Controller) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, push, update, remove, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // CONFIG (ใช้ข้อมูลที่คุณให้มา)
+        // FIREBASE CONFIG (Your Provided Config)
         const firebaseConfig = {
             apiKey: "AIzaSyCo3cgxCC7XBCY1VRtwZBujlipacjFH6cA",
             authDomain: "register-6ad84.firebaseapp.com",
@@ -199,7 +243,6 @@
         let allQueues = [];
         let lastCalledId = null;
 
-        // Initialize ระบบ
         const init = async () => {
             await signInAnonymously(auth);
             onAuthStateChanged(auth, (u) => {
@@ -217,15 +260,15 @@
                 }
             });
             
-            // อัปเดตเวลาบนหน้าจอ TV
+            // TV Clock Update
             setInterval(() => {
                 const now = new Date();
                 const timeEl = document.getElementById('dispTime');
-                if(timeEl) timeEl.innerText = now.toLocaleTimeString('th-TH');
+                if(timeEl) timeEl.innerText = now.toLocaleTimeString('th-TH', { hour12: false });
             }, 1000);
         };
 
-        // ระบบเสียงเรียกภาษาไทย
+        // Thai Voice Announcement
         function handleVoice(items) {
             const calling = items.find(i => i.status === 'calling');
             if (calling && calling.id !== lastCalledId) {
@@ -233,91 +276,73 @@
                 const num = getQueueFormatted(items, calling);
                 const voice = new SpeechSynthesisUtterance(`เชิญหมายเลข ${num.split('').join(' ')} ที่ช่องบริการหมายเลข ${calling.counter} ค่ะ`);
                 voice.lang = 'th-TH';
-                voice.rate = 0.9;
+                voice.rate = 0.95;
                 window.speechSynthesis.speak(voice);
             }
         }
 
-        // จัดรูปแบบหมายเลขคิว (001)
         function getQueueFormatted(items, item) {
             const index = items.indexOf(item) + 1;
             return index.toString().padStart(3, '0');
         }
 
-        // สลับ View
         window.switchView = (name) => {
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('view-active'));
             document.getElementById(`view-${name}`).classList.add('view-active');
             window.location.hash = name;
         };
 
-        // LOGIC: q.html (แบบกดรับคิวทันที)
+        // KIOSK LOGIC (Auto Register)
         const btnGetQueue = document.getElementById('btnGetQueue');
         btnGetQueue.addEventListener('click', async () => {
             btnGetQueue.disabled = true;
-            btnGetQueue.classList.add('opacity-50');
-
             try {
                 await push(ref(db, 'registrations'), {
                     name: 'ลูกค้าทั่วไป',
-                    gender: '-',
-                    phone: '-',
-                    message: 'บริการทั่วไป',
+                    gender: '-', phone: '-', message: 'General Service',
                     status: 'waiting',
                     timestamp: serverTimestamp()
                 });
-
                 const qNum = (allQueues.length + 1).toString().padStart(3, '0');
                 document.getElementById('ticketNum').innerText = qNum;
-                document.getElementById('ticketName').innerText = 'ลูกค้าทั่วไป';
                 document.getElementById('ticketModal').classList.remove('hidden');
             } catch (e) {
-                showToast("❌ ระบบขัดข้อง กรุณาลองใหม่");
+                showToast("Connection Error");
             } finally {
                 btnGetQueue.disabled = false;
-                btnGetQueue.classList.remove('opacity-50');
             }
         });
 
         window.closeTicket = () => document.getElementById('ticketModal').classList.add('hidden');
 
-        // LOGIC: index.php
+        // TV DISPLAY LOGIC
         function updateDisplay(items) {
             const calling = items.find(i => i.status === 'calling');
             const waiting = items.filter(i => i.status === 'waiting');
             const done = items.filter(i => i.status === 'done');
 
-            const dispNum = document.getElementById('dispNum');
-            const dispCounterText = document.getElementById('dispCounterText');
-            const dispCounterBox = document.getElementById('dispCounterBox');
-            const dispLastCall = document.getElementById('dispLastCall');
-
             if (calling) {
                 const num = getQueueFormatted(items, calling);
-                if(dispNum) dispNum.innerText = num;
-                if(dispCounterText) dispCounterText.innerText = `เชิญที่ช่อง ${calling.counter}`;
-                if(dispCounterBox) dispCounterBox.classList.add('calling-glow');
-                if(dispLastCall) dispLastCall.innerText = num;
+                document.getElementById('dispNum').innerText = num;
+                document.getElementById('dispCounterText').innerText = `ช่องบริการ ${calling.counter}`;
+                document.getElementById('dispCounterBox').classList.add('calling-glow');
+                document.getElementById('dispLastCall').innerText = num;
             } else {
-                if(dispNum) dispNum.innerText = "---";
-                if(dispCounterText) dispCounterText.innerText = `ยินดีให้บริการ`;
-                if(dispCounterBox) dispCounterBox.classList.remove('calling-glow');
+                document.getElementById('dispNum').innerText = "---";
+                document.getElementById('dispCounterText').innerText = `พร้อมให้บริการ`;
+                document.getElementById('dispCounterBox').classList.remove('calling-glow');
             }
-            const w = document.getElementById('dispWaiting');
-            const d = document.getElementById('dispDone');
-            if(w) w.innerText = waiting.length;
-            if(d) d.innerText = done.length;
+            document.getElementById('dispWaiting').innerText = waiting.length;
         }
 
-        // LOGIC: staff.html
+        // STAFF DASHBOARD LOGIC
         function updateStaff(items) {
             const list = document.getElementById('staffList');
-            const waitCountEl = document.getElementById('staffWaitingCount');
-            if(waitCountEl) waitCountEl.innerText = items.filter(i => i.status === 'waiting').length;
+            document.getElementById('staffWaitingCount').innerText = items.filter(i => i.status === 'waiting').length;
 
             if (!list) return;
             if (items.length === 0) {
-                list.innerHTML = `<div class="p-20 text-center text-slate-300 font-bold italic text-lg uppercase tracking-widest">NO DATA</div>`;
+                list.innerHTML = `<div class="p-32 text-center text-slate-200 font-black italic text-3xl uppercase tracking-[0.5em]">Empty</div>`;
                 return;
             }
 
@@ -328,23 +353,29 @@
                 const isDone = st === 'done';
 
                 return `
-                <div class="p-6 flex items-center justify-between transition-all ${isCalling ? 'bg-red-50 border-l-8 border-post-red' : isDone ? 'bg-slate-50 opacity-40' : 'hover:bg-slate-50'}">
-                    <div class="flex items-center gap-6">
-                        <div class="w-16 h-16 rounded-xl flex items-center justify-center font-black text-2xl shadow-sm ${isCalling ? 'bg-post-red text-white' : 'bg-white border border-slate-100 text-slate-400'}">${num}</div>
+                <div class="p-8 flex items-center justify-between transition-all ${isCalling ? 'bg-red-50 border-l-8 border-post-red shadow-inner' : isDone ? 'opacity-30' : 'hover:bg-slate-50'}">
+                    <div class="flex items-center gap-10">
+                        <div class="w-24 h-24 rounded-[2rem] flex flex-col items-center justify-center font-black text-4xl shadow-2xl ${isCalling ? 'bg-post-red text-white scale-110' : 'bg-white border border-slate-100 text-slate-300'}">
+                            <span class="text-[8px] uppercase tracking-widest opacity-60 mb-1">Queue</span>
+                            ${num}
+                        </div>
                         <div>
-                            <p class="font-black text-slate-800 text-xl tracking-tighter uppercase italic">${escapeHtml(item.name)}</p>
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">${item.message}</p>
+                            <p class="font-black text-slate-900 text-2xl tracking-tighter uppercase italic">General Customer</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="w-2 h-2 bg-slate-200 rounded-full"></span>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Registered ${item.timestamp ? new Date(item.timestamp).toLocaleTimeString('th-TH') : 'Just now'}</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-4">
                         ${st === 'waiting' ? `
-                            <button onclick="callQ('${item.id}')" class="px-8 py-3 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-post-red transition uppercase italic">เรียกคิว</button>
+                            <button onclick="callQ('${item.id}')" class="px-10 py-5 bg-slate-900 text-white text-xs font-black rounded-2xl shadow-xl hover:bg-post-red transition uppercase italic tracking-widest">Call Next</button>
                         ` : isCalling ? `
-                            <button onclick="doneQ('${item.id}')" class="px-8 py-3 bg-green-500 text-white text-[10px] font-black rounded-xl hover:bg-green-600 transition uppercase italic">เสร็จสิ้น</button>
+                            <button onclick="doneQ('${item.id}')" class="px-10 py-5 bg-green-500 text-white text-xs font-black rounded-2xl shadow-xl hover:bg-green-600 transition uppercase italic tracking-widest">Complete</button>
                         ` : `
-                            <button onclick="resetQ('${item.id}')" class="p-3 text-slate-300 hover:text-post-red transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
+                            <button onclick="resetQ('${item.id}')" class="p-4 text-slate-300 hover:text-post-red transition"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg></button>
                         `}
-                        <button onclick="delQ('${item.id}')" class="p-3 text-slate-300 hover:text-red-600 transition"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        <button onclick="delQ('${item.id}')" class="p-4 text-slate-200 hover:text-red-600 transition"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                     </div>
                 </div>`;
             }).join('');
@@ -357,13 +388,13 @@
             updates[`registrations/${id}/status`] = 'calling';
             updates[`registrations/${id}/counter`] = counter;
             await update(ref(db), updates);
-            showToast(`📢 เรียกคิวไปที่ช่อง ${counter}`);
+            showToast(`Calling Queue - Station ${counter}`);
         };
 
-        window.doneQ = async (id) => { await update(ref(db, `registrations/${id}`), { status: 'done' }); showToast("✅ บริการเสร็จสิ้น"); };
+        window.doneQ = async (id) => { await update(ref(db, `registrations/${id}`), { status: 'done' }); showToast("Service Completed"); };
         window.resetQ = async (id) => await update(ref(db, `registrations/${id}`), { status: 'waiting', counter: null });
-        window.delQ = async (id) => { if(confirm("ลบคิวนี้?")) await remove(ref(db, `registrations/${id}`)); };
-        window.resetAllQueues = async () => { if(confirm("ต้องการล้างข้อมูลคิวทั้งหมดของวันนี้?")) await remove(ref(db, 'registrations')); };
+        window.delQ = async (id) => { if(confirm("Discard this ticket?")) await remove(ref(db, `registrations/${id}`)); };
+        window.resetAllQueues = async () => { if(confirm("Clear all queue data for today?")) await remove(ref(db, 'registrations')); };
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -375,15 +406,20 @@
             }
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
         const h = window.location.hash.replace('#', '') || 'q';
         switchView(h);
         init();
     </script>
+
+    <style>
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            display: inline-block;
+            animation: marquee 30s linear infinite;
+        }
+    </style>
 </body>
 </html>
