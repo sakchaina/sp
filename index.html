@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงทะเบียนติดต่อกลับความเร็วสูง</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .loading-pulse { animation: pulse-subtle 1.5s infinite; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 text-slate-800 min-h-screen pb-20">
+
+    <!-- Header Section -->
+    <div class="bg-blue-600 text-white py-12 px-6 shadow-lg mb-8">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center">
+            <div class="text-center md:text-left mb-6 md:mb-0">
+                <h1 class="text-3xl md:text-4xl font-bold mb-2">Registration Portal</h1>
+                <p class="text-blue-100">ระบบรับข้อมูลความเร็วสูง เชื่อมต่อ Cloud Database โดยตรง</p>
+            </div>
+            <div id="connectionStatus" class="flex items-center bg-blue-700 px-4 py-2 rounded-full text-sm">
+                <span class="w-2 h-2 bg-yellow-400 rounded-full mr-2 loading-pulse"></span>
+                กำลังเชื่อมต่อฐานข้อมูล...
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-4">
+        <div class="grid lg:grid-cols-12 gap-8">
+            
+            <!-- Form Section -->
+            <div class="lg:col-span-5">
+                <div class="glass-card p-8 rounded-3xl shadow-xl sticky top-8 border-t-4 border-blue-500">
+                    <h2 class="text-2xl font-bold mb-6 text-slate-800">ส่งข้อมูลติดต่อกลับ</h2>
+                    
+                    <form id="regForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">ชื่อ-นามสกุล</label>
+                            <input type="text" id="name" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                                placeholder="สมชาย ใจดี">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">เบอร์โทรศัพท์</label>
+                            <input type="tel" id="phone" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                                placeholder="0812345678">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">อีเมล</label>
+                            <input type="email" id="email" required
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                                placeholder="name@company.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">รายละเอียด</label>
+                            <textarea id="message" rows="3"
+                                class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                                placeholder="สอบถามบริการด้าน..."></textarea>
+                        </div>
+                        <button type="submit" id="submitBtn"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-[0.98] transition-all flex justify-center items-center">
+                            <span>ส่งข้อมูลทันที</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- List Section -->
+            <div class="lg:col-span-7">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                        <h3 class="font-bold text-slate-700 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            ผู้ลงทะเบียนล่าสุด (Real-time)
+                        </h3>
+                        <span id="dataCount" class="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full">0 รายการ</span>
+                    </div>
+                    
+                    <div id="listContainer" class="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+                        <!-- Loading State -->
+                        <div class="p-12 text-center text-slate-400">
+                            <div class="inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                            <p>กำลังดึงข้อมูลจาก Cloud...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- UI Components -->
+    <div id="toast" class="fixed bottom-8 right-8 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center">
+            <span id="toastMsg">บันทึกสำเร็จ</span>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration (Provided by environment)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'speed-reg-app';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const statusEl = document.getElementById('connectionStatus');
+        const listContainer = document.getElementById('listContainer');
+        const dataCountEl = document.getElementById('dataCount');
+        const regForm = document.getElementById('regForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let currentUser = null;
+
+        // 1. Authentication First (Rule 3)
+        const init = async () => {
+            try {
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        statusEl.innerHTML = `
+                            <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                            เชื่อมต่อ Cloud สำเร็จ
+                        `;
+                        startListening(); // 2. Start Live Updates
+                    }
+                });
+            } catch (error) {
+                console.error("Auth Error:", error);
+                statusEl.innerHTML = `<span class="w-2 h-2 bg-red-400 rounded-full mr-2"></span> เชื่อมต่อล้มเหลว`;
+            }
+        };
+
+        // 2. Real-time Listening (Rule 1 & 2)
+        function startListening() {
+            if (!currentUser) return;
+
+            // Path: /artifacts/{appId}/public/data/registrations
+            const dataRef = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
+            
+            // Simple query (No orderBy to avoid index requirement)
+            onSnapshot(dataRef, (snapshot) => {
+                const docs = [];
+                snapshot.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
+                
+                // Sort in memory for speed (Rule 2)
+                docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                
+                renderList(docs);
+                dataCountEl.innerText = `${docs.length} รายการ`;
+            }, (error) => {
+                console.error("Listen Error:", error);
+                listContainer.innerHTML = `<div class="p-8 text-center text-red-500 text-sm">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
+            });
+        }
+
+        // 3. UI Rendering
+        function renderList(items) {
+            if (items.length === 0) {
+                listContainer.innerHTML = `<div class="p-12 text-center text-slate-400">ไม่มีข้อมูลลงทะเบียน</div>`;
+                return;
+            }
+
+            listContainer.innerHTML = items.map(item => `
+                <div class="p-6 hover:bg-slate-50 transition-colors">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-bold text-slate-800">${escapeHtml(item.name)}</h4>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
+                            ${item.createdAt ? new Date(item.createdAt.seconds * 1000).toLocaleTimeString('th-TH') : 'กำลังส่ง...'}
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mb-2">
+                        <span class="flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path></svg>
+                            ${escapeHtml(item.phone)}
+                        </span>
+                        <span class="flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
+                            ${escapeHtml(item.email)}
+                        </span>
+                    </div>
+                    ${item.message ? `<p class="text-sm text-slate-600 bg-slate-100 p-3 rounded-xl mt-2 border-l-2 border-blue-400">${escapeHtml(item.message)}</p>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // 4. Form Submission
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return showToast("กรุณารอสักครู่ กำลังเชื่อมต่อ...");
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span> กำลังบันทึก...`;
+
+            try {
+                const dataRef = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
+                await addDoc(dataRef, {
+                    name: document.getElementById('name').value,
+                    phone: document.getElementById('phone').value,
+                    email: document.getElementById('email').value,
+                    message: document.getElementById('message').value,
+                    createdAt: serverTimestamp()
+                });
+
+                regForm.reset();
+                showToast("✅ บันทึกข้อมูลสำเร็จ!");
+            } catch (error) {
+                console.error("Add Error:", error);
+                showToast("❌ เกิดข้อผิดพลาดในการบันทึก");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>ส่งข้อมูลทันที</span>`;
+            }
+        });
+
+        // Utils
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        init();
+    </script>
+</body>
+</html>
